@@ -11,7 +11,6 @@ class Panel extends React.Component {
     constructor(props) {
         super(props);
 
-       
         let matrix = [];
 
         let currentPart = [[0,0], [0,1],[1,0],[1,1]];
@@ -33,14 +32,15 @@ class Panel extends React.Component {
             shiftY: 0
         }
 
-    }
-
-    _handleClick = (e) => {
-
+        this.shift = {
+            right: (x, y) => [x + 1, y],
+            left: (x, y) => [x - 1, y],
+            down: (x, y) => [x, y + 1]
+        }
     }
 
     _timeout = () => {
-        let [newMatrix, shiftX, shiftY] = this._down(this.state.matrix, this.state.shiftX, this.state.shiftY);
+        let [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
 
         this.setState({
             matrix: newMatrix, 
@@ -67,10 +67,10 @@ class Panel extends React.Component {
         }
     }
 
-    _right = (matrix, shiftX, shiftY) => {
+    _move = (direction ,matrix, shiftX, shiftY) => {
         let newMatrix = [...matrix];
-        let nextShiftY = shiftY;
-        let nextShiftX = shiftX + 1;
+
+        let [nextShiftX, nextShiftY] = this.shift[direction](shiftX, shiftY);
 
         try {
             this._checkLimits(nextShiftX, nextShiftY);
@@ -87,46 +87,6 @@ class Panel extends React.Component {
         return [newMatrix, nextShiftX, nextShiftY];
     }
 
-    _left = (matrix, shiftX, shiftY) => {
-        let newMatrix = [...matrix];
-        let nextShiftY = shiftY;
-        let nextShiftX = shiftX - 1;
-
-        try {
-            this._checkLimits(nextShiftX, nextShiftY);
-        } catch (e) {
-            return [matrix, shiftX, shiftY]
-        }
-
-        this._clearCurrentPiece(newMatrix, shiftX, shiftY);
-
-        for (let cell of this.state.currentPart) {
-            newMatrix[cell[0] + nextShiftY][cell[1] + nextShiftX].color = 1;
-        }
-
-        return [newMatrix, nextShiftX, nextShiftY];
-    }
-
-    _down = (matrix, shiftX, shiftY) => {
-        let newMatrix = [...matrix];
-        let nextShiftY = shiftY + 1;
-        let nextShiftX = shiftX;
-
-        try {
-            this._checkLimits(nextShiftX, nextShiftY);
-        } catch (e) {
-            return [matrix, shiftX, shiftY]
-        }
-
-        this._clearCurrentPiece(newMatrix, shiftX, shiftY);
-
-        // draw current piece
-        for (let cell of this.state.currentPart) {
-            newMatrix[cell[0] + nextShiftY][cell[1] + nextShiftX].color = 1;
-        }
-
-        return [newMatrix, nextShiftX, nextShiftY];
-    }
 
     componentDidMount() {
         setInterval(this._timeout, 500);
@@ -139,13 +99,13 @@ class Panel extends React.Component {
             let newMatrix, shiftX, shiftY;
 
             if (event.keyCode === 39) {
-                [newMatrix, shiftX, shiftY] = this._right(this.state.matrix, this.state.shiftX, this.state.shiftY);
+                [newMatrix, shiftX, shiftY] = this._move('right', this.state.matrix, this.state.shiftX, this.state.shiftY);
 
             } else if (event.keyCode === 37) {
-                [newMatrix, shiftX, shiftY] = this._left(this.state.matrix, this.state.shiftX, this.state.shiftY);
+                [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
 
             } else if (event.keyCode === 40) {
-                [newMatrix, shiftX, shiftY] = this._down(this.state.matrix, this.state.shiftX, this.state.shiftY);
+                [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
             } 
 
             if ((event.keyCode === 39) || (event.keyCode === 37) || (event.keyCode === 40)) {
