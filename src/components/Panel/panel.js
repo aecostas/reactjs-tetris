@@ -63,7 +63,7 @@ class Panel extends React.Component {
         }
 
         if (maxY + nextShiftY > NUMBER_OF_ROWS - 1) {
-            throw new Error('bounds');
+            throw new Error('bounds-down');
         }
     }
 
@@ -75,7 +75,12 @@ class Panel extends React.Component {
         try {
             this._checkLimits(nextShiftX, nextShiftY);
         } catch (e) {
-            return [matrix, shiftX, shiftY]
+            if (e.message === 'bounds-down') {
+                return [matrix, 0, 0]
+
+            } else {
+                return [matrix, shiftX, shiftY]
+            }
         }
 
         this._clearCurrentPiece(newMatrix, shiftX, shiftY);
