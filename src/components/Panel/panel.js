@@ -2,7 +2,7 @@ import React from 'react';
 
 import './panel.css';
 
-const COLOR_EMPTY = 0;
+const COLOR_EMPTY = 'blue';
 
 const NUMBER_OF_COLS = 10;
 const NUMBER_OF_ROWS = 20;
@@ -13,7 +13,10 @@ class Panel extends React.Component {
 
         let matrix = [];
 
-        let currentPart = [[0,0], [0,1],[1,0],[1,1]];
+        let currentPiece = {
+            coords: [[0,0], [0,1],[1,0],[1,1]],
+            color: 'red'
+        }
 
         for (let rowIndex=0; rowIndex < NUMBER_OF_ROWS; rowIndex++) {
             let row = [];
@@ -27,7 +30,7 @@ class Panel extends React.Component {
 
         this.state = {
             matrix,
-            currentPart,
+            currentPiece,
             shiftX: 0,
             shiftY: 0
         }
@@ -47,9 +50,8 @@ class Panel extends React.Component {
         } catch (e) {
             if (e.message === 'bounds-down' || e.message === 'overlap') {
                 newMatrix = [...this.state.matrix];
-                this.state.currentPart.forEach(cell => {
-                    newMatrix[cell[0] + this.state.shiftY][cell[1] + this.state.shiftX].blocked = true;
-                });
+
+                this._blockCurrentPiece(newMatrix);
 
                 shiftX = 0;
                 shiftY = 0;
@@ -62,14 +64,20 @@ class Panel extends React.Component {
             shiftY: shiftY});
     }
 
+    _blockCurrentPiece = (matrix) => {
+        this.state.currentPiece.coords.forEach(cell => {
+            matrix[cell[0] + this.state.shiftY][cell[1] + this.state.shiftX].blocked = true;
+        });
+    }
+
     _clearCurrentPiece = (matrix, shiftX, shiftY) => {
-        this.state.currentPart.forEach(cell => {
+        this.state.currentPiece.coords.forEach(cell => {
             matrix[cell[0] + shiftY][cell[1] + shiftX].color = COLOR_EMPTY;
         });
     }
 
     _checkOverlapping = (shiftX, shiftY) => {
-        this.state.currentPart.forEach(coord => {
+        this.state.currentPiece.coords.forEach(coord => {
             if (this.state.matrix[coord[0] + shiftY][coord[1] + shiftX].blocked) {
                 throw new Error('overlap')
             }
@@ -77,8 +85,8 @@ class Panel extends React.Component {
     }
 
     _checkLimits = (nextShiftX, nextShiftY) => {
-        const maxX = Math.max(...this.state.currentPart.map( coord => coord[0]));
-        const maxY = Math.max(...this.state.currentPart.map( coord => coord[1]));
+        const maxX = Math.max(...this.state.currentPiece.coords.map( coord => coord[0]));
+        const maxY = Math.max(...this.state.currentPiece.coords.map( coord => coord[1]));
 
         if (nextShiftX < 0 || maxX + nextShiftX > NUMBER_OF_COLS - 1) {
             throw new Error('bounds');
@@ -91,20 +99,14 @@ class Panel extends React.Component {
 
     _move = (direction ,matrix, shiftX, shiftY) => {
         let newMatrix = [...matrix];
+        const [nextShiftX, nextShiftY] = this.shift[direction](shiftX, shiftY);
 
-        let [nextShiftX, nextShiftY] = this.shift[direction](shiftX, shiftY);
-
-        try {
-            this._checkLimits(nextShiftX, nextShiftY);
-            this._checkOverlapping(nextShiftX, nextShiftY);
-        } catch (e) {
-            throw e;
-        }
-
+        this._checkLimits(nextShiftX, nextShiftY);
+        this._checkOverlapping(nextShiftX, nextShiftY);
         this._clearCurrentPiece(newMatrix, shiftX, shiftY);
 
-        for (let cell of this.state.currentPart) {
-            newMatrix[cell[0] + nextShiftY][cell[1] + nextShiftX].color = 1;
+        for (let cell of this.state.currentPiece.coords) {
+            newMatrix[cell[0] + nextShiftY][cell[1] + nextShiftX].color = this.state.currentPiece.color;
         }
 
         return [newMatrix, nextShiftX, nextShiftY];
@@ -123,14 +125,25 @@ class Panel extends React.Component {
             let shiftX = this.state.shiftX;
             let shiftY = this.state.shiftY;
 
-            if (event.keyCode === 39) {
-                [newMatrix, shiftX, shiftY] = this._move('right', this.state.matrix, this.state.shiftX, this.state.shiftY);
+            try {
+                if (event.keyCode === 39) {
+                    [newMatrix, shiftX, shiftY] = this._move('right', this.state.matrix, this.state.shiftX, this.state.shiftY);
 
-            } else if (event.keyCode === 37) {
-                [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
+                } else if (event.keyCode === 37) {
+                    [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
+                } 
+            } catch(e) {
 
-            } else if (event.keyCode === 40) {
-                [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
+            }
+            
+            if (event.keyCode === 40) {
+                try {
+                    [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
+                } catch (e) {
+                    if (e.message === 'overlap') {
+                        this._blockCurrentPiece(newMatrix);
+                    }
+                }
             } 
 
             if ((event.keyCode === 39) || (event.keyCode === 37) || (event.keyCode === 40)) {
@@ -152,11 +165,9 @@ class Panel extends React.Component {
             >
                 <div className='parent'>
                     {this.state.matrix.flat().map(cell => {
-                        const styles = {};
-
-                        if (cell.color === 1) {
-                            styles.backgroundColor = 'red';
-                        }
+                        const styles = {
+                            backgroundColor: cell.color
+                        };
 
                         return (
                             <div 
