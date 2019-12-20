@@ -160,7 +160,11 @@ class Panel extends React.Component {
         setInterval(this._timeout, 500);
 
         document.addEventListener('keydown', event => {
-         
+
+            if ([KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_UP].indexOf(event.keyCode) === -1) {
+                return;
+            }
+
             let newMatrix = [...this.state.matrix];
             let shiftX = this.state.shiftX;
             let shiftY = this.state.shiftY;
@@ -171,34 +175,28 @@ class Panel extends React.Component {
 
                 } else if (event.keyCode === KEY_RIGHT) {
                     [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
-                } 
-            } catch(e) {
 
-            }
-
-            if (event.keyCode === KEY_DOWN) {
-                try {
+                } else if (event.keyCode === KEY_DOWN) {
                     [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
-                } catch (e) {
-                    if (e.message === 'overlap' || e.message === 'bounds-down') {
-                        this._blockCurrentPiece(newMatrix);
-                        const filledRows = this._checkFilledRows();
-                        newMatrix = this._removeRows(filledRows);
+                } 
 
-                        shiftX = 0;
-                        shiftY = 0;
-                    }
+            } catch (e) {
+                if (e.message === 'overlap' || e.message === 'bounds-down') {
+                    this._blockCurrentPiece(newMatrix);
+                    const filledRows = this._checkFilledRows();
+                    newMatrix = this._removeRows(filledRows);
+
+                    shiftX = 0;
+                    shiftY = 0;
                 }
-            } 
-
-            if ((event.keyCode === KEY_LEFT) || (event.keyCode === KEY_RIGHT) || (event.keyCode === KEY_DOWN)) {
-                this.setState({
-                    matrix: newMatrix, 
-                    shiftX: shiftX, 
-                    shiftY: shiftY
-                });
             }
 
+            this.setState({
+                matrix: newMatrix, 
+                shiftX: shiftX, 
+                shiftY: shiftY
+            });
+    
         });
     }
 
