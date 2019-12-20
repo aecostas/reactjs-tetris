@@ -7,6 +7,11 @@ const COLOR_EMPTY = 'blue';
 const NUMBER_OF_COLS = 10;
 const NUMBER_OF_ROWS = 20;
 
+const KEY_RIGHT = 37;
+const KEY_UP = 38;
+const KEY_LEFT = 39;
+const KEY_DOWN = 40;
+
 class Panel extends React.Component {
     constructor(props) {
         super(props);
@@ -155,26 +160,23 @@ class Panel extends React.Component {
         setInterval(this._timeout, 500);
 
         document.addEventListener('keydown', event => {
-            // left: 39
-            // right: 37
-            // up: 38
-            // down: 40
+         
             let newMatrix = [...this.state.matrix];
             let shiftX = this.state.shiftX;
             let shiftY = this.state.shiftY;
 
             try {
-                if (event.keyCode === 39) {
+                if (event.keyCode === KEY_LEFT) {
                     [newMatrix, shiftX, shiftY] = this._move('right', this.state.matrix, this.state.shiftX, this.state.shiftY);
 
-                } else if (event.keyCode === 37) {
+                } else if (event.keyCode === KEY_RIGHT) {
                     [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
                 } 
             } catch(e) {
 
             }
 
-            if (event.keyCode === 40) {
+            if (event.keyCode === KEY_DOWN) {
                 try {
                     [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
                 } catch (e) {
@@ -189,7 +191,7 @@ class Panel extends React.Component {
                 }
             } 
 
-            if ((event.keyCode === 39) || (event.keyCode === 37) || (event.keyCode === 40)) {
+            if ((event.keyCode === KEY_LEFT) || (event.keyCode === KEY_RIGHT) || (event.keyCode === KEY_DOWN)) {
                 this.setState({
                     matrix: newMatrix, 
                     shiftX: shiftX, 
