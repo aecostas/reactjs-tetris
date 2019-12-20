@@ -50,8 +50,9 @@ class Panel extends React.Component {
         } catch (e) {
             if (e.message === 'bounds-down' || e.message === 'overlap') {
                 newMatrix = [...this.state.matrix];
-
                 this._blockCurrentPiece(newMatrix);
+                const filledRows = this._checkFilledRows();
+                newMatrix = this._removeRows(filledRows);
 
                 shiftX = 0;
                 shiftY = 0;
@@ -82,6 +83,43 @@ class Panel extends React.Component {
                 throw new Error('overlap')
             }
         });
+    }
+
+    _checkFilledRows = () => {
+        const filledRows = this.state.matrix
+            .map(row => {
+                return row.filter(cell => !cell.blocked).length === 0
+            })
+            .map( (filled, index) => {
+                if (filled) {
+                    return index;
+                } else {
+                    return -1;
+                }
+            })
+            .filter( index => index !== -1)
+
+        return filledRows;
+    }
+
+    _removeRows = (rowIndexes) => {
+        let newMatrix = [...this.state.matrix]
+        let newRows = [];
+
+        for (let index of rowIndexes) {
+            newMatrix[index] = undefined;
+
+            let row = [];
+
+            for (let colIndex = 0; colIndex < NUMBER_OF_COLS; colIndex++) {
+                row.push({color: COLOR_EMPTY, blocked: false});
+            }
+
+            newRows.push(row);
+        }
+        newMatrix = newMatrix.filter(row => row !== undefined);
+
+        return [...newRows, ...newMatrix];
     }
 
     _checkLimits = (nextShiftX, nextShiftY) => {
@@ -135,13 +173,18 @@ class Panel extends React.Component {
             } catch(e) {
 
             }
-            
+
             if (event.keyCode === 40) {
                 try {
                     [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
                 } catch (e) {
-                    if (e.message === 'overlap') {
+                    if (e.message === 'overlap' || e.message === 'bounds-down') {
                         this._blockCurrentPiece(newMatrix);
+                        const filledRows = this._checkFilledRows();
+                        newMatrix = this._removeRows(filledRows);
+
+                        shiftX = 0;
+                        shiftY = 0;
                     }
                 }
             } 
