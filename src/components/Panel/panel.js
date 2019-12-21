@@ -1,27 +1,26 @@
 import React from 'react';
 
 import './panel.css';
+import PieceFactory from './pieceFactory';
 
 const COLOR_EMPTY = 'blue';
 
 const NUMBER_OF_COLS = 10;
 const NUMBER_OF_ROWS = 20;
 
-const KEY_RIGHT = 37;
+const KEY_RIGHT = 39;
 const KEY_UP = 38;
-const KEY_LEFT = 39;
+const KEY_LEFT = 37;
 const KEY_DOWN = 40;
 
 class Panel extends React.Component {
     constructor(props) {
         super(props);
 
+        this.pieceFactory = new PieceFactory();
         let matrix = [];
 
-        let currentPiece = {
-            coords: [[0,0], [0,1],[1,0],[1,1]],
-            color: 'red'
-        }
+        let currentPiece = this.pieceFactory.get();
 
         for (let rowIndex=0; rowIndex < NUMBER_OF_ROWS; rowIndex++) {
             let row = [];
@@ -48,43 +47,24 @@ class Panel extends React.Component {
     }
 
     _timeout = () => {
-        let newMatrix, shiftX, shiftY;
-
-        try {
-            [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
-        } catch (e) {
-            if (e.message === 'bounds-down' || e.message === 'overlap') {
-                newMatrix = [...this.state.matrix];
-                this._blockCurrentPiece(newMatrix);
-                const filledRows = this._checkFilledRows();
-                newMatrix = this._removeRows(filledRows);
-
-                shiftX = 0;
-                shiftY = 0;
-            }
-        }
-
-        this.setState({
-            matrix: newMatrix, 
-            shiftX: shiftX, 
-            shiftY: shiftY});
+        this._doAction('down');
     }
 
     _blockCurrentPiece = (matrix) => {
         this.state.currentPiece.coords.forEach(cell => {
-            matrix[cell[0] + this.state.shiftY][cell[1] + this.state.shiftX].blocked = true;
+            matrix[cell[1] + this.state.shiftY][cell[0] + this.state.shiftX].blocked = true;
         });
     }
 
     _clearCurrentPiece = (matrix, shiftX, shiftY) => {
         this.state.currentPiece.coords.forEach(cell => {
-            matrix[cell[0] + shiftY][cell[1] + shiftX].color = COLOR_EMPTY;
+            matrix[cell[1] + shiftY][cell[0] + shiftX].color = COLOR_EMPTY;
         });
     }
 
     _checkOverlapping = (shiftX, shiftY) => {
         this.state.currentPiece.coords.forEach(coord => {
-            if (this.state.matrix[coord[0] + shiftY][coord[1] + shiftX].blocked) {
+            if (this.state.matrix[coord[1] + shiftY][coord[0] + shiftX].blocked) {
                 throw new Error('overlap')
             }
         });
@@ -149,53 +129,55 @@ class Panel extends React.Component {
         this._clearCurrentPiece(newMatrix, shiftX, shiftY);
 
         for (let cell of this.state.currentPiece.coords) {
-            newMatrix[cell[0] + nextShiftY][cell[1] + nextShiftX].color = this.state.currentPiece.color;
+            newMatrix[cell[1] + nextShiftY][cell[0] + nextShiftX].color = this.state.currentPiece.color;
         }
 
         return [newMatrix, nextShiftX, nextShiftY];
     }
 
+    _doAction = (action) => {
+        let newMatrix = [...this.state.matrix];
+        let shiftX = this.state.shiftX;
+        let shiftY = this.state.shiftY;
+        let nextPiece = this.state.currentPiece;
+
+        try {
+            [newMatrix, shiftX, shiftY] = this._move(action, this.state.matrix, this.state.shiftX, this.state.shiftY);
+        } catch (e) {
+            if (e.message === 'overlap' || e.message === 'bounds-down') {
+                this._blockCurrentPiece(newMatrix);
+                const filledRows = this._checkFilledRows();
+                newMatrix = this._removeRows(filledRows);
+
+                nextPiece = this.pieceFactory.get();
+                shiftX = 0;
+                shiftY = 0;
+            }
+        }
+
+        this.setState({
+            matrix: newMatrix, 
+            shiftX: shiftX, 
+            shiftY: shiftY,
+            currentPiece: nextPiece
+        });
+    }
 
     componentDidMount() {
         setInterval(this._timeout, 500);
 
         document.addEventListener('keydown', event => {
-
             if ([KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_UP].indexOf(event.keyCode) === -1) {
                 return;
             }
 
-            let newMatrix = [...this.state.matrix];
-            let shiftX = this.state.shiftX;
-            let shiftY = this.state.shiftY;
-
-            try {
-                if (event.keyCode === KEY_LEFT) {
-                    [newMatrix, shiftX, shiftY] = this._move('right', this.state.matrix, this.state.shiftX, this.state.shiftY);
-
-                } else if (event.keyCode === KEY_RIGHT) {
-                    [newMatrix, shiftX, shiftY] = this._move('left', this.state.matrix, this.state.shiftX, this.state.shiftY);
-
-                } else if (event.keyCode === KEY_DOWN) {
-                    [newMatrix, shiftX, shiftY] = this._move('down', this.state.matrix, this.state.shiftX, this.state.shiftY);
-                } 
-
-            } catch (e) {
-                if (e.message === 'overlap' || e.message === 'bounds-down') {
-                    this._blockCurrentPiece(newMatrix);
-                    const filledRows = this._checkFilledRows();
-                    newMatrix = this._removeRows(filledRows);
-
-                    shiftX = 0;
-                    shiftY = 0;
-                }
+            if (event.keyCode === KEY_RIGHT) {
+                this._doAction('right');
+            } else if (event.keyCode === KEY_LEFT) {
+                this._doAction('left');
+            } else if (event.keyCode === KEY_DOWN) {
+                this._doAction('down');
             }
-
-            this.setState({
-                matrix: newMatrix, 
-                shiftX: shiftX, 
-                shiftY: shiftY
-            });
     
         });
     }
