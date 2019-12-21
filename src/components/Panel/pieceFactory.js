@@ -7,7 +7,7 @@ class PieceFactory {
             },
             {
                 coords: [[0,0], [0, 1], [0, 2], [1, 2]],
-                color: 'green'
+                color: '#228B22'
             },
             {
                 coords: [[1,0], [1, 1], [1, 2], [0, 2]],

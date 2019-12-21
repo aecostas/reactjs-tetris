@@ -3,7 +3,7 @@ import React from 'react';
 import './panel.css';
 import PieceFactory from './pieceFactory';
 
-const COLOR_EMPTY = 'blue';
+const COLOR_EMPTY = 'black';
 
 const NUMBER_OF_COLS = 10;
 const NUMBER_OF_ROWS = 20;
@@ -44,10 +44,6 @@ class Panel extends React.Component {
             left: (x, y) => [x - 1, y],
             down: (x, y) => [x, y + 1]
         }
-    }
-
-    _timeout = () => {
-        this._doAction('down');
     }
 
     _blockCurrentPiece = (matrix) => {
@@ -164,7 +160,7 @@ class Panel extends React.Component {
     }
 
     componentDidMount() {
-        setInterval(this._timeout, 500);
+        setInterval(() => this._doAction('down'), 500);
 
         document.addEventListener('keydown', event => {
             if ([KEY_LEFT, KEY_RIGHT, KEY_DOWN, KEY_UP].indexOf(event.keyCode) === -1) {
@@ -183,6 +179,7 @@ class Panel extends React.Component {
     }
 
     render () {
+
         return (
             <div 
                 className='panel'
@@ -193,6 +190,10 @@ class Panel extends React.Component {
                         const styles = {
                             backgroundColor: cell.color
                         };
+
+                        if (cell.color !== 'black') {
+                            styles.border = "1px solid #c4c4c4"
+                        }
 
                         return (
                             <div 
